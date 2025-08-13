@@ -13,50 +13,92 @@
 
 ## 系统要求
 
-- Python 3.7+
+- Python 3.6-3.9 (推荐3.8)
 - Linux/Unix 系统
 - 诺禾云 lnd 命令行工具
+- Anaconda/Miniconda (推荐使用mamba)
 - 网络连接
 
 ## 快速开始
 
-### 1. 安装依赖
+### 方法1: 自动环境配置 (推荐)
+
+使用mamba/conda自动创建和管理环境：
 
 ```bash
+# 1. 克隆项目
 cd /home/maolp/Codeman/All_InProgress_Mission/Novogene_Download
-pip install -r requirements.txt
+
+# 2. 自动配置环境 (使用mamba创建，conda激活)
+chmod +x scripts/setup_env.sh
+./scripts/setup_env.sh
+
+# 3. 一键运行
+./run_app.sh
 ```
 
-### 2. 配置设置
-
-编辑 `config/settings.py` 文件，确保 lnd 命令路径正确：
-
-```python
-# 下载配置
-class DownloadConfig:
-    # lnd命令路径
-    LND_CMD_PATH = '/home/maolp/mao/Biosoft/lnd'  # 根据实际路径修改
-    
-    # 默认下载目录
-    DEFAULT_DOWNLOAD_DIR = '/home/maolp/Codeman/All_InProgress_Mission/Novogene_Download/data/'
-```
-
-### 3. 启动应用
+### 方法2: 手动环境管理
 
 ```bash
-# 方法1: 直接运行
-python app.py
+# 1. 使用mamba创建环境 (速度更快)
+mamba env create -f environment.yml
 
-# 方法2: 使用入口脚本
+# 或使用conda创建环境
+# conda env create -f environment.yml
+
+# 2. 激活环境
+conda activate novogene-download
+
+# 3. 运行应用
 python run.py
-
-# 方法3: 后台运行
-nohup python run.py > logs/app.log 2>&1 &
 ```
 
-### 4. 访问界面
+### 方法3: 便捷脚本
 
-打开浏览器访问: `http://localhost:5000`
+```bash
+# 快速激活环境
+source scripts/activate_env.sh
+
+# 运行应用
+python run.py
+```
+
+### 访问界面
+
+打开浏览器访问: `http://202.116.2.252:3683`
+
+## 环境管理
+
+### 环境配置文件
+
+系统提供完整的conda环境配置：
+
+- `environment.yml` - conda/mamba环境定义文件
+- `scripts/setup_env.sh` - 自动环境配置脚本
+- `scripts/activate_env.sh` - 快速环境激活脚本
+- `run_app.sh` - 一键运行脚本
+
+### 环境命令
+
+```bash
+# 创建环境
+mamba env create -f environment.yml
+
+# 更新环境
+mamba env update -f environment.yml
+
+# 激活环境
+conda activate novogene-download
+
+# 退出环境
+conda deactivate
+
+# 删除环境
+conda env remove -n novogene-download
+
+# 查看环境列表
+conda env list
+```
 
 ## 使用说明
 

@@ -1,101 +1,84 @@
 #!/bin/bash
 
 # Novogene下载管理系统一键运行脚本
-# 功能: 自动检查环境，创建/激活环境，启动应用
-
-# 颜色定义
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
 ENV_NAME="novogene-download"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo -e "${CYAN}"
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║               诺禾云下载管理系统启动器                     ║"
-echo "║                Novogene Download Manager                   ║"
-echo "╚════════════════════════════════════════════════════════════╝"
-echo -e "${NC}"
+# 默认配置
+DEFAULT_HOST="202.116.2.252"
+DEFAULT_PORT="3683"
 
-# 检查conda是否可用
-check_conda() {
-    if ! command -v conda &> /dev/null; then
-        echo -e "${RED}❌ 错误：未检测到conda，请先安装Anaconda/Miniconda${NC}"
-        exit 1
-    fi
+# 参数解析
+CUSTOM_HOST=""
+CUSTOM_PORT=""
+
+# 帮助信息
+show_help() {
+    echo "使用方法: $0 [选项]"
+    echo ""
+    echo "选项:"
+    echo "  -H, --host HOST    指定服务器地址 (默认: $DEFAULT_HOST)"
+    echo "  -p, --port PORT    指定端口号 (默认: $DEFAULT_PORT)"
+    echo "  -h, --help         显示此帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  $0                           # 使用默认配置"
+    echo "  $0 -p 5000                   # 使用端口5000"
+    echo "  $0 -H 0.0.0.0 -p 8080       # 监听所有地址的8080端口"
+    echo ""
 }
+
+# 解析命令行参数
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -H|--host)
+            CUSTOM_HOST="$2"
+            shift 2
+            ;;
+        -p|--port)
+            CUSTOM_PORT="$2"
+            shift 2
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "未知参数: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+echo "🚀 启动Novogene下载管理系统..."
 
 # 检查环境是否存在
-check_env_exists() {
-    if conda env list | grep -q "^$ENV_NAME "; then
-        return 0  # 环境存在
-    else
-        return 1  # 环境不存在
-    fi
-}
+if ! conda env list | grep -q "^$ENV_NAME "; then
+    echo "❌ 环境 '$ENV_NAME' 不存在，正在自动创建..."
+    "$SCRIPT_DIR/scripts/setup_env.sh"
+fi
 
-# 主启动流程
-main() {
-    echo -e "${BLUE}🔍 检查系统环境...${NC}"
-    check_conda
-    
-    # 检查环境是否存在
-    if check_env_exists; then
-        echo -e "${GREEN}✅ 环境 '$ENV_NAME' 已存在${NC}"
-    else
-        echo -e "${YELLOW}⚠️  环境 '$ENV_NAME' 不存在，正在自动创建...${NC}"
-        
-        # 检查setup脚本是否存在
-        if [ ! -f "$SCRIPT_DIR/scripts/setup_env.sh" ]; then
-            echo -e "${RED}❌ 错误：未找到环境配置脚本 scripts/setup_env.sh${NC}"
-            exit 1
-        fi
-        
-        # 运行环境配置脚本
-        echo -e "${BLUE}🛠️  运行环境配置脚本...${NC}"
-        "$SCRIPT_DIR/scripts/setup_env.sh"
-        
-        if [ $? -ne 0 ]; then
-            echo -e "${RED}❌ 环境创建失败${NC}"
-            exit 1
-        fi
-    fi
-    
-    echo -e "${BLUE}🔧 激活环境 '$ENV_NAME'...${NC}"
-    
-    # 初始化conda
-    source "$(conda info --base)/etc/profile.d/conda.sh"
-    
-    # 激活环境
-    conda activate "$ENV_NAME"
-    
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}❌ 环境激活失败${NC}"
-        exit 1
-    fi
-    
-    echo -e "${GREEN}✅ 环境激活成功！${NC}"
-    echo -e "${GREEN}🐍 Python版本: $(python --version)${NC}"
-    echo -e "${GREEN}📍 Python路径: $(which python)${NC}"
-    
-    # 切换到项目目录
-    cd "$SCRIPT_DIR"
-    
-    echo -e "${BLUE}🌐 启动Web服务器...${NC}"
-    echo -e "${YELLOW}访问地址: http://202.116.2.252:3683${NC}"
-    echo -e "${YELLOW}按 Ctrl+C 停止服务器${NC}"
-    echo ""
-    
-    # 启动应用
-    python run.py
-}
+# 激活环境并运行
+echo "🔧 激活环境..."
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate "$ENV_NAME"
 
-# 错误处理
-trap 'echo -e "\n${YELLOW}🛑 服务器已停止${NC}"; exit 0' INT
+# 设置环境变量
+if [[ -n "$CUSTOM_HOST" ]]; then
+    export FLASK_HOST="$CUSTOM_HOST"
+    echo "📡 自定义服务器地址: $CUSTOM_HOST"
+else
+    echo "📡 使用默认服务器地址: $DEFAULT_HOST"
+fi
 
-# 执行主函数
-main "$@"
+if [[ -n "$CUSTOM_PORT" ]]; then
+    export FLASK_PORT="$CUSTOM_PORT"
+    echo "🔌 自定义端口: $CUSTOM_PORT"
+else
+    echo "🔌 使用默认端口: $DEFAULT_PORT"
+fi
+
+echo "🌐 启动Web服务器..."
+cd "$SCRIPT_DIR"
+python run.py
